@@ -1,0 +1,1540 @@
+{%- comment -%}
+Those are the option names for which we automatically detect swatch. For the color, we use them to display a swatch, while
+for size, we use it to display a size chart (if applicable)
+{%- endcomment -%}
+
+{%- assign color_label = 'color,colour,couleur,colore,farbe,색,色,färg,farve' | split: ',' -%}
+{%- assign size_label = 'size,taille,größe,tamanho,tamaño,koko,サイズ' | split: ',' -%}
+
+{%- assign size_chart_page = '' -%}
+{%- assign product_popovers = '' -%}
+{%- assign show_option_label = false -%}
+
+{%- assign selected_variant = product.selected_or_first_available_variant -%}
+
+{%- form 'product', product, class: 'ProductForm' -%}
+  <div class="ProductForm__Variants">
+    {%- unless product.has_only_default_variant -%}
+      {%- for option in product.options_with_values -%}
+        {%- assign downcase_option = option.name | downcase -%}
+
+        {%- if section.settings.selector_mode == 'block' or color_label contains downcase_option and section.settings.show_color_swatch -%}
+          {%- assign show_option_label = true -%}
+        {%- endif -%}
+      {%- endfor -%}
+
+      {%- for option in product.options_with_values -%}
+        {%- assign downcase_option = option.name | downcase -%}
+        {%- capture popover_id -%}popover-{{ product.id }}-{{ section.id }}-{{ option.name | handle }}{%- endcapture -%}
+
+        <div class="ProductForm__Option {% if show_option_label %}ProductForm__Option--labelled{% endif %}">
+          {%- if show_option_label -%}
+            {%- assign size_chart_page = pages['size-chart'] -%}
+
+            <span class="ProductForm__Label">
+              {{ option.name }}:
+
+              {% if color_label contains downcase_option and section.settings.show_color_swatch %}
+                <span class="ProductForm__SelectedValue">{{ option.selected_value }}</span>
+              {% endif %}
+
+              {%- if size_label contains downcase_option and size_chart_page != empty -%}
+                <button type="button" class="ProductForm__LabelLink Link Text--subdued" data-action="open-modal" aria-controls="modal-{{ size_chart_page.handle }}">
+                {{- 'product.form.size_chart' | t -}}
+              </button>
+              {%- endif -%}
+            </span>
+          {%- endif -%}
+
+          {%- if color_label contains downcase_option and section.settings.show_color_swatch -%}
+            <ul class="ColorSwatchList HorizontalList HorizontalList--spacingTight">
+              {%- for value in option.values -%}
+                {%- assign downcase_value = value | downcase -%}
+
+                <li class="HorizontalList__Item">
+                  {%- assign color_swatch_name = value | handle | append: '.png' -%}
+                  {%- assign color_swatch_image = images[color_swatch_name] -%}
+
+                  <input id="option-{{ section.id }}-{{ forloop.parentloop.index0 }}-{{ forloop.index0 }}" class="ColorSwatch__Radio" type="radio" name="option-{{ forloop.parentloop.index0 }}" value="{{ value | escape }}" {% if value == option.selected_value %}checked="checked"{% endif %} data-option-position="{{ option.position }}">
+                  <label for="option-{{ section.id }}-{{ forloop.parentloop.index0 }}-{{ forloop.index0 }}" class="ColorSwatch ColorSwatch--large {% if downcase_value == 'white' %}ColorSwatch--white{% endif %}" data-tooltip="{{ value | escape }}" style="background-color: {{ value | replace: ' ', '' | downcase }}; {% if color_swatch_image != blank %}background-image: url({{ color_swatch_image | img_url: '64x64' }}){% endif %}">
+                    <span class="u-visually-hidden">{{ value }}</span>
+                  </label>
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- elsif section.settings.selector_mode == 'block' -%}
+            <ul class="SizeSwatchList HorizontalList HorizontalList--spacingTight">
+              {%- for value in option.values -%}
+                <li class="HorizontalList__Item">
+                  <input id="option-{{ section.id }}-{{ forloop.parentloop.index0 }}-{{ forloop.index0 }}" class="SizeSwatch__Radio" type="radio" name="option-{{ forloop.parentloop.index0 }}" value="{{ value | escape }}" {% if value == option.selected_value %}checked="checked"{% endif %} data-option-position="{{ option.position }}">
+                  <label for="option-{{ section.id }}-{{ forloop.parentloop.index0 }}-{{ forloop.index0 }}" class="SizeSwatch">{{ value }}</label>
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- else -%}
+            <button type="button" class="ProductForm__Item" aria-expanded="false" aria-controls="{{ popover_id }}">
+              <span class="ProductForm__OptionName">{% unless show_option_label %}{{ option.name }}: {% endunless %}<span class="ProductForm__SelectedValue">{{ option.selected_value }}</span></span>
+              {%- render 'icon' with 'select-arrow' -%}
+            </button>
+
+            {%- capture popover_html -%}
+              {%- if color_label contains downcase_option and section.settings.show_color_carousel -%}
+                {%- for value in option.values -%}
+                  {%- if value == option.selected_value -%}
+                    {%- assign initial_image_index = forloop.index0 -%}
+                    {%- break -%}
+                  {%- endif -%}
+                {%- endfor -%}
+
+                {%- capture flickity_options -%}
+                {
+                  "prevNextButtons": true,
+                  "pageDots": true,
+                  "initialIndex": {{ initial_image_index }},
+                  "arrowShape": {"x0": 20, "x1": 60, "y1": 40, "x2": 60, "y2": 35, "x3": 25}
+                }
+                {%- endcapture -%}
+
+                <div id="{{ popover_id }}" class="VariantSelector" aria-hidden="true">
+                  {%- capture option_index -%}option{{ option.position }}{%- endcapture -%}
+
+                  <div class="VariantSelector__Carousel Carousel" data-flickity-config='{{ flickity_options }}'>
+                    {%- for value in option.values -%}
+                      {%- for variant in product.variants -%}
+                        {%- if variant[option_index] == value -%}
+                          {%- assign variant_image = variant.image | default: product.featured_image -%}
+                          {%- break -%}
+                        {%- endif -%}
+                      {%- endfor -%}
+
+                      <div class="VariantSelector__Item Carousel__Cell {% if value == option.selected_value %}is-selected{% endif %}"
+                           data-background-color="{{ value | split: ' ' | last | handle }}"
+                           data-background-image="{{ value | handle | append: '.png' | asset_url }}"
+                           data-option-position="{{ option.position }}"
+                           data-option-value="{{ value | escape }}">
+                        <div class="VariantSelector__ImageWrapper AspectRatio AspectRatio--withFallback" style="max-width: {{ variant_image.width }}px; padding-bottom: {{ 100.0 | divided_by: variant_image.aspect_ratio }}%; --aspect-ratio: {{ variant_image.aspect_ratio }}">
+                          {%- capture supported_sizes -%}{%- render 'image-size', sizes: '200,400,600,800', image: variant_image -%}{%- endcapture -%}
+                          {%- assign image_url = variant_image | img_url: '1x1' | replace: '_1x1.', '_{width}x.' -%}
+
+                          <img class="VariantSelector__Image Image--lazyLoad Image--fadeIn" data-src="{{ image_url }}" data-widths="[{{ supported_sizes }}]" data-sizes="auto" alt="{{ variant_image.alt | escape }}">
+                          <span class="Image__Loader"></span>
+                        </div>
+                      </div>
+                    {%- endfor -%}
+                  </div>
+
+                  <div class="VariantSelector__Info">
+                    <div class="VariantSelector__ChoiceList">
+                      {%- for value in option.values -%}
+                        {%- assign min_price_for_variant = product.price_max -%}
+
+                        {%- for variant in product.variants -%}
+                          {%- if variant[option_index] == value -%}
+                            {%- assign min_price_for_variant = min_price_for_variant | at_most: variant.price -%}
+                          {%- endif -%}
+                        {%- endfor -%}
+
+                        <div class="VariantSelector__Choice {% if value == option.selected_value %}is-selected{% endif %}">
+                          <div class="VariantSelector__ChoiceColor">
+                            {%- assign downcase_value = value | downcase -%}
+
+                            {%- assign color_swatch_name = value | handle | append: '.png' -%}
+                            {%- assign color_swatch_image = images[color_swatch_name] -%}
+
+                            <span class="VariantSelector__ColorSwatch {% if downcase_value == 'white' %}VariantSelector__ColorSwatch--white{% endif %}" style="background-color: {{ value | replace: ' ', '' | downcase }}; {% if color_swatch_image != blank %}background-image: url({{ color_swatch_image | img_url: '64x64' }}){% endif %}"></span>
+                            <span class="VariantSelector__ChoiceValue">{{ value }}</span>
+                          </div>
+
+                          <div class="VariantSelector__ChoicePrice">
+                            {%- if available_prices_for_option_value.size > 1 -%}
+                              {%- capture formatted_min_price -%}<span>{{ min_price_for_variant | money_without_trailing_zeros }}</span>{%- endcapture -%}
+                              <span class="Heading Text--subdued">{{ 'product.form.from_price_html' | t: min_price: formatted_min_price }}</span>
+                            {%- else -%}
+                              <span class="Heading Text--subdued">{{ min_price_for_variant | money_without_trailing_zeros }}</span>
+                            {%- endif -%}
+                          </div>
+                        </div>
+                      {%- endfor -%}
+                    </div>
+
+                    <button type="button" class="VariantSelector__Button Button Button--primary Button--full" data-action="select-variant">{{- 'product.form.select_model' | t -}}</button>
+                  </div>
+                </div>
+              {%- else -%}
+                <div id="{{ popover_id }}" class="OptionSelector Popover Popover--withMinWidth" aria-hidden="true">
+                  <header class="Popover__Header">
+                    <button type="button" class="Popover__Close Icon-Wrapper--clickable" data-action="close-popover">{% render 'icon' with 'close' %}</button>
+                    <span class="Popover__Title Heading u-h4">{{ option.name | escape }}</span>
+                  </header>
+
+                  <div class="Popover__Content">
+                    <div class="Popover__ValueList" data-scrollable>
+                      {%- for value in option.values -%}
+                        <button type="button" class="Popover__Value {% if value == option.selected_value %}is-selected{% endif %} Heading Link Link--primary u-h6"
+                                data-value="{{ value | escape }}"
+                                data-option-position="{{ option.position }}"
+                                data-action="select-value">
+                          {{- value | escape -}}
+                        </button>
+                      {%- endfor -%}
+                    </div>
+
+                    {%- assign size_chart_page = pages['size-chart'] -%}
+
+                    {%- if show_option_label == false and size_label contains downcase_option and size_chart_page != empty -%}
+                      <button type="button" class="Popover__FooterHelp Heading Link Link--primary Text--subdued u-h6" data-action="open-modal" aria-controls="modal-{{ size_chart_page.handle }}">
+                        {{- 'product.form.size_chart' | t -}}
+                      </button>
+                    {%- endif -%}
+                  </div>
+                </div>
+              {%- endif -%}
+            {%- endcapture -%}
+
+            {%- assign product_popovers = product_popovers | append: popover_html -%}
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+
+      <div class="no-js ProductForm__Option">
+        <div class="Select Select--primary">
+          {%- render 'icon' with 'select-arrow' -%}
+
+          <select id="product-select-{{ product.id }}" name="id" title="Variant">
+            {%- for variant in product.variants -%}
+              <option {% if variant == selected_variant %}selected="selected"{% endif %} {% unless variant.available %}disabled="disabled"{% endunless %} value="{{ variant.id }}" data-sku="{{ variant.sku }}">{{ variant.title }} - {{ variant.price | money }}</option>
+            {%- endfor -%}
+          </select>
+        </div>
+      </div>
+    {%- else -%}
+      <input type="hidden" name="id" data-sku="{{ selected_variant.sku }}" value="{{ selected_variant.id }}">
+    {%- endunless -%}
+
+    {%- if section.settings.show_quantity_selector -%}
+      {%- if show_option_label -%}
+        <span class="ProductForm__Label">{{ 'product.form.quantity' | t }}:</span>
+      {%- endif -%}
+
+      <div class="ProductForm__QuantitySelector">
+        <div class="QuantitySelector QuantitySelector--large">
+          {%- assign quantity_minus_one = line_item.quantity | minus: 1 -%}
+
+          <span class="QuantitySelector__Button Link Link--secondary" data-action="decrease-quantity">{% render 'icon' with 'minus' %}</span>
+          <input type="text" class="QuantitySelector__CurrentQuantity" pattern="[0-9]*" name="quantity" value="1">
+          <span class="QuantitySelector__Button Link Link--secondary" data-action="increase-quantity">{% render 'icon' with 'plus' %}</span>
+        </div>
+      </div>
+    {%- else -%}
+      <input type="hidden" name="quantity" value="1">
+    {%- endif -%}
+
+    {%- if section.settings.show_inventory_quantity -%}
+      {%- assign hide_inventory_quantity_by_default = false -%}
+      
+      {%- if selected_variant.inventory_management == blank or selected_variant.inventory_quantity <= 0 -%}
+        {%- assign hide_inventory_quantity_by_default = true -%}
+      {%- endif -%}
+
+      {%- if section.settings.inventory_quantity_threshold != 0 and selected_variant.inventory_quantity > section.settings.inventory_quantity_threshold -%}
+        {%- assign hide_inventory_quantity_by_default = true -%}
+      {%- endif -%}
+
+      <p class="ProductForm__Inventory Text--subdued" {% if hide_inventory_quantity_by_default %}style="display: none"{% endif %}>
+        {%- if section.settings.inventory_quantity_threshold == 0 -%}
+          {{- 'product.form.inventory_quantity_count' | t: count: selected_variant.inventory_quantity -}}
+        {%- else -%}
+          {{- 'product.form.low_inventory_quantity_count' | t: count: selected_variant.inventory_quantity -}}
+        {%- endif -%}
+      </p>
+    {%- endif -%}
+  </div>
+
+  {%- comment -%}
+  --------------------------------------------------------------------------------------------------------------------
+  ADD TO CART BUTTON
+  --------------------------------------------------------------------------------------------------------------------
+  {%- endcomment -%}
+  
+  {% comment %} % render 'kp-product-page-snippet' % {% endcomment %}
+
+      <button type="submit" class="ProductForm__AddToCart Button {% if selected_variant.available and section.settings.show_payment_button == false %}Button--primary{% else %}Button--secondary{% endif %} Button--full" {% if selected_variant.available %}
+              data-action="add-to-cart"{% else %}
+              disabled="disabled"{% endif %}>
+        {%- if selected_variant.available -%}
+          <span>{% if product.template_suffix == 'pre-order' %}{{ 'product.form.pre_order' | t }}{% else %}{{ 'product.form.add_to_cart' | t }}{% endif %}</span>
+
+          {%- if section.settings.show_price_in_button -%}
+            <span class="Button__SeparatorDot"></span>
+            <span>{{ selected_variant.price | money_without_trailing_zeros }}</span>
+          {%- endif -%}
+        {%- else -%}
+          {{- 'product.form.sold_out' | t -}}
+        {%- endif -%}
+      </button>
+
+  {%- if section.settings.show_payment_button and product.template_suffix != 'pre-order' -%}
+    {{ form | payment_button }}
+  {%- endif -%}
+{%- endform -%}
+
+{%- if size_chart_page != empty -%}
+  {%- comment -%}If we have a size chart we capture the modal content (it must be displayed outside the form for proper positioning){%- endcomment -%}
+
+  {%- capture product_modals -%}
+    <div id="modal-{{ size_chart_page.handle }}" class="Modal Modal--dark Modal--fullScreen Modal--pageContent" aria-hidden="true" role="dialog" data-scrollable>
+      <header class="Modal__Header">
+        <h2 class="Modal__Title Heading u-h1">{{ size_chart_page.title }}</h2>
+      </header>
+
+      <div class="Modal__Content Rte">
+        <div class="Container Container--extraNarrow">
+          {{- size_chart_page.content -}}
+        </div>
+      </div>
+
+      <button class="Modal__Close RoundButton RoundButton--large" data-animate-bottom data-action="close-modal">{% render 'icon' with 'close' %}</button>
+    </div>
+  {%- endcapture -%}
+{%- endif -%}
+
+{%- if section.settings.show_payment_button and selected_variant.available == false -%}
+  <style>
+    #shopify-section-{{ section.id }} .shopify-payment-button {
+      display: none;
+    }
+  </style>
+{%- endif -%}
+
+{%- comment -%}
+--------------------------------------------------------------------------------------------------------------------
+OFF SCREEN ELEMENTS
+
+Implementation note: in the past (with "include") we could accumulate the data and output it outside the snippet
+itself. However with the new "render" tag, everything that is captured inside cannot be used outside the snippet
+itself. As a consequence we are moving them in JavaScript. This allows to make sure that those elements are upper
+in the DOM tree, and do not show below the content
+--------------------------------------------------------------------------------------------------------------------
+{%- endcomment -%}
+
+<div class="Product__OffScreen">
+  {{- product_popovers -}}
+  {{- product_modals -}}
+</div>
+
+{% comment %}
+------------------------------------------------------------------------------
+Product Data. This must be outputted for all products (including home page).
+
+IMPORTANT: THIS CODE IS VITAL. DO NOT EDIT IT NOT REMOVE IT. MAKE SURE TO KEEP
+THE EXACT SAME ATTRIBUTES.
+------------------------------------------------------------------------------
+{% endcomment %}
+<script>
+  
+  function isPack() {
+    jQuery.get("https://93c446fd2272.ngrok.io/api/pack/product/"+{{ product.id }}, function(data) {
+      var pack = data.pack;
+      var index = -1;
+      for(var i = 0; i < pack.variants.length;i++) {
+          var current_variant = pack.variants[i];
+          if(parseInt(current_variant.variant_id) === {{ selected_variant.id }}) {
+              index = i;
+          }
+      }
+      if(index !== -1){
+          var selected = pack.variants[index];
+          if(!selected.available) {
+              var button = document.getElementsByClassName("ProductForm__AddToCart")[0];
+              button.innerHTML = "No Disponible";
+              button.disabled = true;
+          }
+      }
+    });
+  }
+  
+  var handles = [
+    "2-pack-smiley",
+    "3-pack-all-black",
+    "3-pack-classic-distressed",
+    "3-pack-classic-slub",
+    "3-pack-long-sleeve",
+    "3-pack-smiley",
+    "4-pack-xpocket-classic",
+    "6-pack-xpocket-curved",
+    "3-pack-xpocket-curved",
+    "3-pack-xpocket-curved-colores",
+    "3-pack-polo",
+    "5-pack-henley",
+    "3-pack-basics-sin-mangas",
+    "3-pack-sueteres-tejidos"
+  ];
+  
+  var container = document.getElementsByClassName("Container")[0];
+  
+  var sizes = ["XS","S","M","L"];
+  
+  var observer = new MutationObserver(function(mutations) {
+  	mutations.forEach(function(mutation) {
+      if (mutation.removedNodes.length) {
+        //console.log("removed nodes", mutation.removedNodes[0].nodeValue);
+      }
+
+      if (mutation.addedNodes.length) {
+        var value = mutation.addedNodes[0].nodeValue;
+        //console.log(value);
+        if(sizes.includes(value)) {
+          setEventListeners();
+        }
+      }
+    });
+  });
+    
+  var config = {
+    childList: true,
+    subtree: true,
+    characterData: true
+  };
+    
+  
+  observer.observe(container, config);
+  
+  
+  function setEventListeners() {
+    var button = document.getElementsByClassName("ProductForm__AddToCart")[0];
+  	var form = document.getElementsByClassName("ProductForm")[0];
+    form.addEventListener("submit", function (event) {
+      var handle = "{{ product.handle }}";
+      if(handles.includes(handle)) {
+        event.preventDefault();
+        event.stopPropagation();
+        addToCart();
+      }
+    });
+    
+    button.addEventListener("click", function(event) {
+      var handle = "{{ product.handle }}";
+      if(handles.includes(handle)) {
+        event.preventDefault();
+        event.stopPropagation();  
+        addToCart();
+      }
+    }, true);
+
+    button.addEventListener("touchstart", function(event) {
+      var handle = "{{ product.handle }}";
+      if(handles.includes(handle)) {
+        event.preventDefault();
+        event.stopPropagation();    	
+        addToCart();
+      }
+    }, true);
+
+    button.addEventListener("touchmove", function(event) {
+      var handle = "{{ product.handle }}";
+      if(handles.includes(handle)) {
+        event.preventDefault();
+        event.stopPropagation();
+        addToCart();
+      }
+    }, true);
+  }
+  
+  setEventListeners();
+  
+  
+  function getVariantsArray(handle) {
+    var variants = getVariants(handle);
+    var data = Object.keys(variants).map(key => ({
+      id: variants[key],
+      quantity: 1
+    }));
+    return data;
+  }
+
+  
+  function getVariants(handle) {
+    var selected = {{ selected_variant.id}};
+    var urlParams = new URLSearchParams(window.location.search);
+	var variantURL = urlParams.get('variant');
+    if(variantURL && variantURL !== null && variantURL !== selected && !isNaN(variantURL)) {
+    	selected = variantURL;
+    }
+    selected = parseInt(selected);
+    if(isNaN(selected)) {
+      selected = {{ selected_variant.id }};
+    }
+    switch(handle){ 
+      case "2-pack-smiley":
+        var black, white;
+        //XS
+        if(selected === 38176758366403) {
+          black = 32431196176481;
+          white = 32431196307553;
+        //S
+        } else if(selected === 38176758399171) {
+          black = 32431196209249;
+          white = 32431196340321;
+        //M
+        } else if(selected === 38176758431939) {
+          black = 32431196242017;
+          white = 32431196373089;
+        //L
+        } else {
+          black = 32431196274785;
+          white = 32431196405857;
+        }
+        return {
+          black,
+          white
+        }
+      case "basictee-3packb":
+        var stone, military, navy;
+        //XS
+        if(selected == 32443327283297) {
+           stone = 32431196438625;
+           military = 32431195914337;
+           navy = 32431196045409;
+        //S
+        } else if(selected == 32443327316065) {
+           stone = 32431196471393;
+           military = 32431195947105;
+           navy = 32431196078177;
+        //M
+        } else if(selected == 32443327348833) {
+           stone = 32431196504161;
+           military = 32431195979873;
+           navy = 32431196110945;
+        //L
+        } else {
+           stone = 32431196536929;
+           military = 32431196012641;
+           navy = 32431196012641;
+        }
+        return {
+          military,
+          navy,
+          stone 
+        }
+      case "3-pack-all-black":
+        var xpocket, distressed, classic;
+        //XS
+        if(selected === 37704428748995) {
+           xpocket = 37690611761347;
+           distressed = 32431196176481;
+           classic = 32431196569697;
+        //S
+        } else if(selected === 37704428781763) {
+          xpocket = 37690611794115;
+          distressed = 32431196209249;
+          classic = 32431196602465;
+        //M
+        } else if(selected === 37704428814531) {
+          xpocket = 37690611826883;
+          distressed = 32431196242017;
+          classic = 32431196635233;
+        //L
+        } else if(selected === 37704428847299) {
+          xpocket = 37690611859651;
+          distressed = 32431196274785;
+          classic = 32431196668001;
+        }
+        return {
+          xpocket,
+          distressed,
+          classic
+        }
+      case "3-pack-classic-distressed":
+      	var black, turbulence, stone, white;
+        //XS
+        if(selected === 37705650176195) {
+          black = 32431196569697;
+          turbulence = 37696566165699;
+          stone = 32431196438625;
+          white = 32431196700769;
+        //S
+        } else if(selected === 37705650208963) {
+          black = 32431196602465;
+          turbulence = 37696566198467;
+          stone = 32431196471393;
+          white = 32431196733537;
+        //M
+        } else if(selected === 37705650241731) {
+          black = 32431196635233;
+          turbulence = 37696566231235;
+          stone = 32431196504161;
+          white = 32431196766305;
+        //L
+        } else if(selected === 37705650274499) {
+          black = 32431196668001;
+          turbulence = 37696566264003;
+          stone = 32431196536929;
+          white = 32431196799073;
+        }
+        return {
+          black,
+          turbulence,
+          //stone,
+          white
+        }
+      case "3-pack-classic-slub":
+        var white, black, military;
+        //XS
+        if(selected === 37705693462723) {
+           white = 37690792640707;
+           black = 37690792476867;
+           military = 37690792345795;
+        //S
+		} else if(selected === 37705693495491) {
+           white = 37690792673475;
+           black = 37690792509635;
+           military = 37690792378563;
+        //M
+        } else if(selected === 37705693561027) {
+           white = 37690792706243;
+           black = 37690792542403;
+           military = 37690792411331;
+        //L
+        } else{
+           white = 37690792739011;
+           black = 37690792575171;
+           military = 37690792444099;
+        }
+        return {
+          white,
+          black,
+          military
+        }
+      case "3-pack-long-sleeve":
+        var graphite, ivory, sandstone;
+        //S
+        if(selected === 37705809461443) {
+           graphite = 37614969618627;
+           ivory = 37614970110147;
+           sandstone = 37614969979075;
+        //M
+        } else if(selected === 37705809494211) {
+           graphite = 37614969651395;
+           ivory = 37614970142915;
+           sandstone = 37614970011843;
+        //L
+        } else {
+           graphite = 37614969684163;
+           ivory = 37614970175683;
+           sandstone = 37614970044611;
+        }
+        return {
+          graphite,
+          ivory,
+          sandstone
+        }
+      case "3-pack-smiley":
+        var gris, black, white;
+        //XS
+        if(selected === 37705818996931) {
+          gris = 37690783432899;
+          black = 32431196176481;
+          white = 32431196307553;
+        //S
+        } else if(selected === 37705819029699) {
+          gris = 37690783465667;
+          black = 32431196209249;
+          white = 32431196340321;
+        //M
+        } else if(selected === 37705819062467) {
+          gris = 37690783498435;
+          black = 32431196242017;
+          white = 32431196373089;
+        //L
+        } else {
+          gris = 37690783531203;
+          black = 32431196274785;
+          white = 32431196405857;
+        }
+        return {
+       	  gris,
+          black,
+          white
+        }
+      case "4-pack-xpocket-classic":
+        var washed, black, military, oak;
+        //XS
+        if(selected === 37705825124547) {
+          washed = 37690611761347;
+          black = 37690611171523;
+          military = 37690611007683;
+          oak = 37690611564739;
+        //S
+        } else if(selected === 37705825157315) {
+          washed = 37690611794115;
+          black = 37690611204291;
+          military = 37690611040451;
+          oak = 37690611597507;
+        //M
+        } else if(selected === 37705825190083) {
+          washed = 37690611826883;
+          black = 37690611237059;
+          military = 37690611073219;
+          oak = 37690611630275;
+        //L
+        } else {
+          washed = 37690611859651;
+          black = 37690611269827;
+          military = 37690611105987;
+          oak = 37690611663043;
+        }
+        return {
+          washed,
+          black,
+          military,
+          oak
+        }
+      case "6-pack-xpocket-curved":
+      	var black, gris, military, stone, turbulence, washed, white;
+        //XS
+        if(selected === "") {
+          black = 32431210528865;
+          gris = 37670699794627;
+          military = 32431210004577;
+          stone = 37670700024003;
+          turbulence = 37670700449987;
+          washed = 32431210659937;
+          white = 32431210791009;
+        //S
+        } else if(selected ==="") {
+          black = 32431210561633;
+          gris = 37670699860163;
+          military = 32431210037345;
+          stone = 37670700056771;
+          turbulence = 37670700482755;
+          washed = 32431210692705;
+          white = 32431210823777;
+        //M
+        } else if(selected ==="") {
+          black = 32431210594401;
+          gris = 37670699892931;
+          military = 32431210070113;
+          stone = 37670700089539;
+          turbulence = 37670700515523;
+          washed = 32431210725473;
+          white = 32431210856545;
+        //L
+        } else {
+          black = 32431210627169;
+          gris = 37670699925699;
+          military = 32431210102881;
+          stone = 37670700122307;
+          turbulence = 37670700548291;
+          washed = 32431210758241;
+          white = 32431210889313;
+        }
+        return {
+          black,
+          gris,
+          military,
+          //stone,
+          turbulence,
+          washed,
+          white
+        }
+      case "3-pack-xpocket-curved":
+      	var black, gris, white;
+        //XS
+        if(selected === 37705831907523) {
+          black = 32431210528865;
+          gris = 37670699794627;
+          white = 32431210791009;
+        //S
+        } else if(selected === 37705831940291) {
+          black = 32431210561633;
+          gris = 37670699860163;
+          white = 32431210823777;
+        //M
+        } else if(selected === 37705831973059) {
+          black = 32431210594401;
+          gris = 37670699892931;
+          white = 32431210856545;
+        //L
+        } else {
+          black = 32431210627169;
+          gris = 37670699925699;
+          white = 32431210889313;
+        }
+        return {
+          black,
+          gris,
+          white
+        }
+      case "3-pack-xpocket-curved-colores":
+        var stone, turbulence, military, washed;
+        //XS
+        if(selected === 37705835610307) {
+        	stone = 37670700024003;
+            turbulence = 37670700449987;
+            military = 32431210004577;
+          	washed = 32431210659937;
+        //S
+        } else if(selected === 37705835643075) {
+            stone = 37670700056771;
+            turbulence = 37670700482755;
+            military = 32431210037345;
+            washed = 32431210692705;
+        //M
+        } else if(selected === 37705835675843) {
+            stone = 37670700089539;
+            turbulence = 37670700515523;
+            military = 32431210070113;
+            washed = 32431210725473;
+        //L
+        } else {
+            stone = 37670700122307;
+            turbulence = 37670700548291;
+            military = 32431210102881;
+            washed = 32431210758241;
+        }
+        return {
+          //stone,
+          washed,
+          turbulence,
+          military
+        }
+      case "3-pack-polo":
+      	var white, iron, turbulence;
+        //XS
+        if(selected === 37705838985411) {
+          white = 37690573848771;
+          iron = 37690574078147;
+          turbulence = 37690573684931;
+        //S
+        } else if(selected === 37705839018179) {
+          white = 37690573881539;
+          iron = 37690574110915;
+          turbulence = 37690573717699;
+        //M
+        } else if(selected === 37705839050947) {
+          white = 37690573914307;
+          iron = 37690574143683;
+          turbulence = 37690573750467;
+        //L
+        } else {
+          white = 37690573979843;
+          iron = 37690574176451;
+          turbulence = 37690573783235;
+        }
+        return {
+          white,
+          iron,
+          turbulence
+        }
+      case "5-pack-henley":
+        var white, black, gris, verde, slate;
+        //S
+        if(selected === 37705848160451) {
+          white = 37614967292099;
+          black = 37690575683779;
+          gris = 37614964506819;
+          verde = 37690576011459;
+          slate = 37690575847619;
+        //M
+        } else if(selected === 37705848193219) {
+          white = 37614967324867;
+          black = 37690575716547;
+          gris = 37614964539587;
+          verde = 37690576044227;
+          slate = 37690575880387;
+        //L
+        } else {
+          white = 37614967357635;
+          black = 37690575749315;
+          gris = 37614964572355;
+          verde = 37690576076995;
+          slate = 37690575913155;
+        }
+        return {
+          white,
+          black,
+          gris,
+          verde,
+          slate
+        }
+      case "3-pack-basics-sin-mangas":
+        var negro = 37680081731779;
+        var blanco = 37680075243715;
+        var militar = 37680079962307;
+        return {
+          negro,
+          blanco,
+          militar,
+        };
+      case "3-pack-sueteres-tejidos":
+        var gris = 37680060956867;
+        var negro = 37680069050563;
+        var caramelo = 37680066003139;
+        return {
+        	gris,
+         	caramelo,
+         	negro
+        }
+    }
+  }
+  
+  function setButton() {
+    var handle = "{{ product.handle }}";
+    var variants = getVariants("{{ product.handle }}");
+    var button = document.getElementsByClassName("ProductForm__AddToCart")[0];
+    if(handle === "2-pack-smiley") {
+    	let { black, white } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/basictee-smileyblack.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === black) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/basictee-smileywhite.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === white) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+          if(available.length !== Object.keys(variants).length) {
+           	button.innerHTML = "No Disponible";
+        	button.disabled = true;
+          }
+        });
+      });
+    } else if(handle === "basictee-3packb") {
+      var military = variants.military;
+      var navy = variants.navy;
+      var stone = variants.stone;
+
+      var stoneAvailable = false;
+      var militaryAvailable = false;
+      var navyAvailable = false;
+
+      jQuery.getJSON('/products/basictee-military.js', function(product) {
+         for(var i = 0; i < product.variants.length; i++) {
+            if(product.variants[i].id === military) {
+               militaryAvailable = product.variants[i].available;
+            }
+         }
+         jQuery.getJSON('/products/basictee-navy.js', function(product) {
+            for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === navy) {
+                    navyAvailable = product.variants[i].available;
+                  }
+                }
+                jQuery.getJSON('/products/basictee-stone.js', function(product) {
+                  var variants = product.variants;
+                  for(var i = 0; i < product.variants.length; i++) {
+                    if(product.variants[i].id === stone) {
+                      stoneAvailable = product.variants[i].available;
+                    }
+                  }
+                  if(!stoneAvailable || !navyAvailable || !militaryAvailable) {
+                    button.innerHTML = "No Disponible";
+                    button.disabled = true;
+                  }
+                });
+          });
+      });
+    } else if(handle === "3-pack-all-black") {
+      let { xpocket, distressed, classic } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/classicxpockettee-washedblack.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === xpocket) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/basictee-washedblack.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === classic) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+          jQuery.getJSON("/products/basictee-smileyblack.js", function(product) {
+          	for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === distressed) {
+                    if(product.variants[i].available) {
+                      available.push(1);
+                    }
+                  }
+                }
+            if(available.length !== Object.keys(variants).length) {
+                    button.innerHTML = "No Disponible";
+                    button.disabled = true;
+            }
+          });
+        });
+      });
+    } else if(handle === "3-pack-classic-distressed") {
+      let { black, turbulence, white } = variants;
+      let available = [];
+      jQuery.getJSON("/products/basictee-washedblack.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === black) {
+             if(product.variants[i].available) {
+             	available.push(1);
+             }
+           }
+        }
+        jQuery.getJSON("/products/distressedclassictee-turbulence.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === turbulence) {
+                  if(product.variants[i].available){
+             		available.push(1);
+                  }
+                }
+          }
+          /*jQuery.getJSON("/products/basictee-stone.js", function(product) {
+          	for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === stone) {
+             			available.push(1);
+                  }
+                }
+                */
+            jQuery.getJSON("/products/basictee-white.js", function(product) {
+          		for(var i = 0; i < product.variants.length; i++) {
+                	if(product.variants[i].id === white) {
+                      if(product.variants[i].available){
+                      	available.push(1);
+                      }
+                  	}
+                }
+                if(available.length !== Object.keys(variants).length) {
+                      button.innerHTML = "No Disponible";
+                      button.disabled = true;
+                }
+            });
+          //});
+        });
+      });
+    } else if(handle === "3-pack-classic-slub") {
+      let { white, black, military } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/slubclassictee-white.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === white) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/slubclassictee-black.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === black) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+          jQuery.getJSON("/products/slubclassictee-military.js", function(product) {
+          	for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === military) {
+                    if(product.variants[i].available) {
+                      available.push(1);
+                    }
+                  }
+                }
+            if(available.length !== Object.keys(variants).length) {
+                    button.innerHTML = "No Disponible";
+                    button.disabled = true;
+            }
+          });
+        });
+      });
+    } else if(handle === "3-pack-long-sleeve") {
+      let { graphite, ivory, sandstone } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/lsclassictee-graphite.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === graphite) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/lsclassictee-sandstone.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === ivory) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+          jQuery.getJSON("/products/lsclassictee-ivory.js", function(product) {
+          	for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === sandstone) {
+                    if(product.variants[i].available) {
+                      available.push(1);
+                    }
+                  }
+                }
+            if(available.length !== Object.keys(variants).length) {
+                    button.innerHTML = "No Disponible";
+                    button.disabled = true;
+            }
+          });
+        });
+      });
+    } else if(handle === "3-pack-smiley") {
+      let { gris, black, white } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/basictee-smileyblack.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === black) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/basictee-smileywhite.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === white) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+          jQuery.getJSON("/products/distressedsmileytee-gray.js", function(product) {
+          	for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === gris) {
+                    if(product.variants[i].available) {
+                      available.push(1);
+                    }
+                  }
+                }
+            if(available.length !== Object.keys(variants).length) {
+                    button.innerHTML = "No Disponible";
+                    button.disabled = true;
+            }
+          });
+        });
+      });
+    } else if(handle === "4-pack-xpocket-classic") {
+      let { washed, black, oak, military } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/classicxpockettee-black.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === black) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/classicxpockettee-military.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === military) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+          jQuery.getJSON("/products/classicxpockettee-oak.js", function(product) {
+          	for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === oak) {
+                    if(product.variants[i].available) {
+                      available.push(1);
+                    }
+                  }
+                }
+            jQuery.getJSON("/products/classicxpockettee-washedblack.js", function(product) {
+              for(var i = 0; i < product.variants.length; i++) {
+                  if(product.variants[i].id === washed) {
+                      if(product.variants[i].available) {
+                        available.push(1);
+                      }
+                  }
+              }
+            	if(available.length !== Object.keys(variants).length) {
+                    button.innerHTML = "No Disponible";
+                    button.disabled = true;
+            	}
+            });
+          });
+        });
+      });
+    } else if(handle === "6-pack-xpocket-curved") {
+      let { black, gris, military, stone, turbulence, washed, white } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/xpockettee-solidblack.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === black) {
+             	if(product.variants[i].available) {
+                    console.log(1);
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/xpocketcurvedhemtee-gray.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === gris) {
+                  if(product.variants[i].available) {
+                    console.log(2);
+                    available.push(1);
+                  }
+                }
+          }
+          jQuery.getJSON("/products/xpockettee-military.js", function(product) {
+          	for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === military) {
+                    if(product.variants[i].available) {
+                      console.log(3);
+                      available.push(1);
+                    }
+                  }
+            }
+            //jQuery.getJSON("/products/xpocketcurvedhemtee-stone.js", function(product) {
+              /*for(var i = 0; i < product.variants.length; i++) {
+                  if(product.variants[i].id === stone) {
+                      if(product.variants[i].available) {
+                                            console.log(4);
+
+                        available.push(1);
+                      }
+                    }
+              }*/
+              jQuery.getJSON("/products/xpocketcurvedhemtee-turbulence.js", function(product) {
+                for(var i = 0; i < product.variants.length; i++) {
+                    if(product.variants[i].id === turbulence) {
+                        if(product.variants[i].available) {
+                                              console.log(5);
+
+                          available.push(1);
+                        }
+                      }
+                }
+                jQuery.getJSON("/products/xpockettee-washedblack.js", function(product) {
+                  for(var i = 0; i < product.variants.length; i++) {
+                      if(product.variants[i].id === washed) {
+                          if(product.variants[i].available) {
+                                                console.log(6);
+
+                            available.push(1);
+                          }
+                        }
+                  }
+                  jQuery.getJSON("/products/xpockettee-white.js", function(product) {
+                      for(var i = 0; i < product.variants.length; i++) {
+                          if(product.variants[i].id === white) {
+                              if(product.variants[i].available) {
+                                                    console.log(7);
+
+                                available.push(1);
+                              }
+                            }
+                      }
+                      if(available.length !== Object.keys(variants).length) {
+                         button.innerHTML = "No Disponible";
+                         button.disabled = true;
+                      }
+                  });
+                });
+              });
+            //});
+          });
+        });
+      });
+    } else if(handle === "3-pack-xpocket-curved"){
+      let { black, gris, white } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/xpockettee-solidblack.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === black) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/xpocketcurvedhemtee-gray.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === gris) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+                  jQuery.getJSON("/products/xpockettee-white.js", function(product) {
+                      for(var i = 0; i < product.variants.length; i++) {
+                          if(product.variants[i].id === white) {
+                              if(product.variants[i].available) {
+                                available.push(1);
+                              }
+                            }
+                      }
+                      if(available.length !== Object.keys(variants).length) {
+                         button.innerHTML = "No Disponible";
+                         button.disabled = true;
+                      }
+                  });
+          });
+      });
+    } else if(handle === "3-pack-xpocket-curved-colores") {
+      let { military, washed, turbulence } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/xpockettee-military.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === military) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/xpockettee-washedblack.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === washed) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+                  jQuery.getJSON("/products/xpocketcurvedhemtee-turbulence.js", function(product) {
+                      for(var i = 0; i < product.variants.length; i++) {
+                          if(product.variants[i].id === turbulence) {
+                              if(product.variants[i].available) {
+                                available.push(1);
+                              }
+                            }
+                      }
+                      if(available.length !== Object.keys(variants).length) {
+                         button.innerHTML = "No Disponible";
+                         button.disabled = true;
+                      }
+                  });
+          });
+      });
+    } else if(handle === "3-pack-polo") {
+      let { iron, white, turbulence } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/polo-turbulence.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === turbulence) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/polo-whitereactive.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === white) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+                  jQuery.getJSON("/products/polo-wroughtiron.js", function(product) {
+                      for(var i = 0; i < product.variants.length; i++) {
+                          if(product.variants[i].id === iron) {
+                              if(product.variants[i].available) {
+                                available.push(1);
+                              }
+                            }
+                      }
+                      if(available.length !== Object.keys(variants).length) {
+                         button.innerHTML = "No Disponible";
+                         button.disabled = true;
+                      }
+                  });
+          });
+      });
+    } else if(handle === "5-pack-henley") {
+      let { black, gris, verde, slate, white } = variants;
+      let available = [];
+      jQuery.getJSON("/products/henley-blackwash.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+          if(product.variants[i].id === black) {
+            if(product.variants[i].available) {
+            	available.push(1);
+            }
+           }
+        }
+        jQuery.getJSON("/products/henley-slategray.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === slate && product.variants[i].available) {
+             		available.push(1);
+                  }
+                }
+        
+          jQuery.getJSON("/products/triblendclassichenleypremuimheather.js", function(product) {
+          	for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === gris && product.variants[i].available) {
+             			available.push(1);
+                  }
+                } 
+          	
+              jQuery.getJSON("/products/triblendclassichenleyheatherwhite.js", function(product) {
+                  for(var i = 0; i < product.variants.length; i++) {
+                      if(product.variants[i].id === white && product.variants[i].available) {
+                          available.push(1);
+                      }
+
+                  }
+                 jQuery.getJSON("/products/henley-tea.js", function(product) {
+                    for(var i = 0; i < product.variants.length; i++) {
+                        if(product.variants[i].id === verde && product.variants[i].available) {
+                            available.push(1);
+                        }
+                    }
+                    if(available.length !== Object.keys(variants).length) {
+                          button.innerHTML = "No Disponible";
+                          button.disabled = true;
+                    }
+                  }); 
+              });
+          });
+        });
+      });
+    } else if(handle === "3-pack-basics-sin-mangas") {
+      let { militar, blanco, negro } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/basicwomentee-militarygreen.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === militar) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/basicwomentee-white.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === blanco) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+                  jQuery.getJSON("/products/basicwomentee-black.js", function(product) {
+                      for(var i = 0; i < product.variants.length; i++) {
+                          if(product.variants[i].id === negro) {
+                              if(product.variants[i].available) {
+                                available.push(1);
+                              }
+                            }
+                      }
+                      if(available.length !== Object.keys(variants).length) {
+                         button.innerHTML = "No Disponible";
+                         button.disabled = true;
+                      }
+                  });
+          });
+      });
+    } else if(handle === "3-pack-sueteres-tejidos") {
+      let { caramelo, gris, negro } = variants;
+	  let available = [];
+      jQuery.getJSON("/products/knittedsweater-goldcamel.js", function(product) {
+        for(var i = 0; i < product.variants.length; i++) {
+           if(product.variants[i].id === caramelo) {
+             	if(product.variants[i].available) {
+                    available.push(1);
+                }
+           }
+        }
+        jQuery.getJSON("/products/knittedsweater-gray.js", function(product) {
+          for(var i = 0; i < product.variants.length; i++) {
+                if(product.variants[i].id === gris) {
+                  if(product.variants[i].available) {
+                    available.push(1);
+                  }
+                }
+          }
+                  jQuery.getJSON("/products/knittedsweater-black.js", function(product) {
+                      for(var i = 0; i < product.variants.length; i++) {
+                          if(product.variants[i].id === negro) {
+                              if(product.variants[i].available) {
+                                available.push(1);
+                              }
+                            }
+                      }
+                      if(available.length !== Object.keys(variants).length) {
+                         button.innerHTML = "No Disponible";
+                         button.disabled = true;
+                      }
+                  });
+          });
+      });
+    }
+  }
+  
+  function setBuyNow() {
+    var buyNow = document.getElementsByClassName("shopify-payment-button__button")[0];
+    buyNow.addEventListener("click", function(event) {
+      var handle = "{{ product.handle }}";
+      if(handles.includes(handle)) {
+        event.preventDefault();
+        event.stopPropagation();  
+        addToCart(true);
+      }
+    });
+  }
+  
+  function addToCart(checkout) {
+    var handle = "{{ product.handle }}";
+    var data = getVariantsArray(handle);
+  	jQuery.post('/cart/add.js',{
+      items: data,
+      success: function(cart){
+        setTimeout(() => {
+        	location.reload();
+        }, 1000);
+      }
+    });
+  }
+  
+  setTimeout(function() {
+      setButton();
+      setBuyNow();
+  }, 1200);
+  
+  setTimeout(function() {
+      var swatchList = document.getElementsByClassName("swatch-view")[0];
+      var toRemove = [];
+      var swatches = swatchList.childNodes;
+      for(var i = 0; i < swatches.length; i++) {
+      	var element = swatches[i];
+        var childDiv = element.childNodes[0];
+        var spanElement = childDiv.childNodes[0];
+        var value = String(spanElement.innerHTML).toLowerCase();
+        if(value.includes("bundle")) {
+          toRemove.push(element);
+        }
+      }
+     for(var i = toRemove.length - 1; i > -1; i--) {
+       toRemove[i].remove();
+     }
+  }, 1500);
+</script>
+<script type="application/json" data-product-json>
+  {
+    "product": {{ product | json }},
+    "selected_variant_id": {{ selected_variant.id }}
+    {%- if section.settings.show_inventory_quantity -%}
+      ,"inventories": {
+        {%- for variant in product.variants -%}
+          {%- assign inventory_message = '' -%}
+
+          {%- if section.settings.inventory_quantity_threshold == 0 -%}
+            {%- capture inventory_message -%}{{- 'product.form.inventory_quantity_count' | t: count: variant.inventory_quantity -}}{%- endcapture -%}
+          {%- else -%}
+            {%- capture inventory_message -%}{{- 'product.form.low_inventory_quantity_count' | t: count: variant.inventory_quantity -}}{%- endcapture -%}
+          {%- endif -%}
+
+          "{{ variant.id }}": {
+            "inventory_management": {{ variant.inventory_management | json }},
+            "inventory_policy": {{ variant.inventory_policy | json }},
+            "inventory_quantity": {{ variant.inventory_quantity | json }},
+            "inventory_message": {{ inventory_message | json }}
+          }{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      }
+    {%- endif -%}
+  }
+</script>
