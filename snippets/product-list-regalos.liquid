@@ -1,0 +1,40 @@
+<div data-label="Heading" data-key="heading" id="e-1607137321146" class="element-wrap" data-icon="gpicon-heading"
+    data-ver="1" data-id="1607137321146">
+    <div class="elm text-edit gf-elm-center gf-elm-center-lg gf-elm-center-md gf-elm-center-sm gf-elm-center-xs"
+        data-gemlang="en" data-exc="">
+        <h2><b>MENOS DE ${{ coleccion }} MXN</b></h2>
+    </div>
+</div>
+<div data-label="Product List" data-key="product-list" id="m-1606934833442" class="module-wrap"
+    data-icon="gpicon-product-list" data-ver="1.0" data-id="1606934833442" style="min-height: auto;">
+    <div class="module regalos-collection" data-cid="238217887939" data-chandle="regalos-hombre-500" data-limit="16"
+        data-collg="4" data-colmd="3" data-colsm="3" data-colxs="3">
+        <div class="item-content item-content-no-placeholder">
+            <div class="gf_row gf_row-no-width gf_row_no_tools gf_row-no-padding">
+                {% assign colXsClass = ' gf_col-xs-' %}
+                {% assign cols = 12 | divided_by: 3 %}
+                {% assign colXsClass = colXsClass | append:cols %}
+                {% assign colSmClass = ' gf_col-sm-' %}
+                {% assign cols = 12 | divided_by: 3 %}
+                {% assign colSmClass = colSmClass | append:cols %}
+                {% assign colMdClass = ' gf_col-md-' %}
+                {% assign cols = 12 | divided_by: 3 %}
+                {% assign colMdClass = colMdClass | append:cols %}
+                {% assign colLgClass = ' gf_col-lg-' %}
+                {% assign cols = 12 | divided_by: 4 %}
+                {% assign colLgClass = colLgClass | append:cols %}
+                {% assign colClass = 'gf_column gf_col_no_tools' %}
+                {% assign colClass = colClass | append: colXsClass %}
+                {% assign colClass = colClass | append: colSmClass %}
+                {% assign colClass = colClass | append: colMdClass %}
+                {% assign colClass = colClass | append: colLgClass %}
+                {% assign gPLCount = 1 %}
+                {% paginate collections["regalos-"+handle+"-"+coleccion].products by 16 %}
+                {% for product in collections["regalos-"+handle+"-"+coleccion].products %}
+                {% include 'product-item-gem' %}
+                {% endfor %}
+                {% endpaginate %}
+            </div>
+        </div>
+    </div>
+</div>

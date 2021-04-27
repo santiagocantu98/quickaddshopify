@@ -1,0 +1,16 @@
+<!-- Trigger/Open The Modal -->
+<kueskipay-widget
+     data-kpay-widget-type="product"
+     data-kpay-widget-font-size="13"
+     data-kpay-widget-text-align="center"
+     data-kpay-widget-amount="{{ cart.total_price }}"
+     data-kpay-widget-product-name="Cart"
+     data-kpay-widget-logo-color="black"
+     data-kpay-widget-installments-color="black"
+     data-kpay-widget-link-color="black"
+    >
+</kueskipay-widget>
+<script id="kpay-advertising-script"
+ src="https://cdn.kueskipay.com/widgets.js?authorization=dac15aa3-536e-4460-ab58-1143b62bd512&sandbox=false&integration=shopify&version=v1.0">
+</script>
+<script type="">new KueskipayAdvertising().init()</script>

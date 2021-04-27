@@ -1,0 +1,21 @@
+<div class="Container">
+  <header class="PageHeader">
+    <div class="SectionHeader SectionHeader--center">
+      <h1 class="SectionHeader__Heading Heading u-h1">{{ page.title }}</h1>
+    </div>
+  </header>
+	<style>
+      #Search {
+      	position: absolute;
+        top: -72px;
+      }
+  </style>
+  <div class="PageContent PageContent--narrow Rte">
+    {{ page.content }}
+  </div>
+  <script>
+    window.onload = function() {
+      document.getElementById("Search").style.marginTop = -72;
+    }
+  </script>
+</div>

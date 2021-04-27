@@ -1,0 +1,42 @@
+<div class="quick-shop-mobile" style="display: none;">
+    <img src="{{ 'i-close.svg' | asset_url }}" alt="close" class="qvm-close">
+    <div class="qsm-sizes" id="product-variants">
+        <div class="h5">Selecciona tu talla</div>
+        <form action="/cart/add" method="post" enctype="multipart/form-data" class="other-form"
+            id="prduct-{{ product.id }}">
+            {% if product.variants.size > 1 %}
+            {% for variant in product.variants %}
+            {% if variant.available %}
+            <li>
+                <label class="radio inline control-label" for="radio_{{ variant.id }}">
+                    <div class="input-c">
+                        <input type="radio" name="id" class="hide qsm-radio qsm-radio-available"
+                            id="radio_{{ variant.id }}" value="{{ variant.id }}">
+                        <span>{{ variant.title | escape }}</span>
+                    </div>
+                    <div class="h7">Disponible</div>
+                </label>
+            </li>
+            {% else %}
+            <li class="noavailable" data-url="{{ product.url }}">
+                <a href="{{ product.url | within: collection }}">
+                    <label class="radio inline control-label" for="radio_{{ variant.id }}">
+                        <div class="input-c">
+                            <!--                           	<input type="radio" name="id" class="hide qsm-radio" id="radio_{{ variant.id }}" value="{{ variant.id }}"> -->
+                            <span>{{ variant.title | escape }}</span>
+                        </div>
+                        <div class="h7">Notificarme</div>
+                    </label>
+                </a>
+            </li>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+            <input type="submit" name="add" id="add" class="addtobag-btn" value="Agregar">
+
+        </form>
+        <div class="notify-form-cont">
+            {% include 'iStock-collection' %}
+        </div>
+    </div>
+</div>

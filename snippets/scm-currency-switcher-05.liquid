@@ -1,0 +1,24 @@
+{{ "classie.js" | asset_url | script_tag }}                {{ "cs-skin-border.css" | asset_url | stylesheet_tag }}                {{ "selectFx.js" | asset_url | script_tag }}                        <style>
+        {% for currencyIndex in (0..currencySize) %}
+        {% assign currencyCode = currencyCodes[currencyIndex] %}
+        .cs-skin-elastic .cs-options li.flag-{{ currencyCode }} span {
+                                                                     background-image: url(//cdn.secomapp.com/currency_switcher/assets/img/flags/{{ currencyCode | downcase }}.png);
+                                                                 }
+        {% endfor %}
+    </style>
+    <div class="sca-body-currency">
+                <div class="sca-currency-style sca-remove-space">
+            <select id="currencies" name="currencies" class="cs-select cs-skin-border cs-skin-elastic" style="display: none;">
+                <option value="{{ defaultCurrencyCode }}" selected="selected">{{ defaultCurrencySymbol }} {{ defaultCurrencyCode }}</option>
+                {% for currencyIndex in (0..currencySize) %}
+                {% assign currencyCode = currencyCodes[currencyIndex] %}
+                {% assign currencySymbol = currencySymbols[currencyIndex] %}
+                {% if currencyCode != defaultCurrencyCode %}
+                <option value="{{ currencyCode }}">{{ currencySymbol }} {{ currencyCode }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="clear-both"></div>
+    </div>
+
