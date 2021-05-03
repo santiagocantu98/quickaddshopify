@@ -22,3 +22,54 @@
  *   bubbles: true
  * }));
  */
+
+
+$(".add-to-cart-ajax.available-add").click(function(event) {
+ 	var variant_id = $(this).data("id");
+    let ajaxbody = {"Size":"true","form_type":"product","utf8":"✓","id":variant_id,"quantity":"1"};
+  
+  let formData = {
+   'items': [{
+    "Size":"true",
+    "form_type":"product",
+     "utf8":"✓",
+     "id":variant_id,
+     "quantity":"1"
+    }]
+  };
+  
+  	document.dispatchEvent(new CustomEvent('theme:loading:start'));
+  
+  	fetch(window.routes.cartAddUrl + '.js', {
+      body: JSON.stringify(formData),
+      credentials: 'same-origin',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest' // This is needed as currently there is a bug in Shopify that assumes this header
+      }
+    }).then(function (response) {
+      document.dispatchEvent(new CustomEvent('theme:loading:end'));
+      if (response.ok) {
+        //addToCartButton.removeAttribute('disabled');
+       // We simply trigger an event so the mini-cart can re-render
+        document.documentElement.dispatchEvent(new CustomEvent('product:added', {
+          bubbles: true,
+          detail: {
+            variant: variant_id,
+            quantity: 1
+          }
+        }));
+      } else {
+        response.json().then(function (content) {
+          var errorMessageElement = document.createElement('span');
+          errorMessageElement.className = 'ProductForm__Error Alert Alert--error';
+          errorMessageElement.innerHTML = content['description'];
+          setTimeout(function () {
+            errorMessageElement.remove();
+          }, 2500);
+        });
+      }
+    });
+  
+}) 

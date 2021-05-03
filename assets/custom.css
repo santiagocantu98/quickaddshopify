@@ -1,0 +1,92 @@
+.acustom-ajax-wrapper {
+  position: absolute;
+  bottom: 63px;
+  width: 100%;
+  left: 0px;
+  padding: 15px;
+  display: none; 
+}
+
+.product-custom-link:hover .acustom-ajax-wrapper {
+  display: block; 
+}
+
+.custom-ajax-variations {
+  width: 100%;
+  display: none;
+  flex-direction: row;
+  background: white;
+  border: 1px solid;
+  height: 50px; 
+}
+.acustom-ajax-wrapper:hover .custom-ajax-variations{
+  display:flex;
+}
+li.add-to-cart-ajax {
+  list-style: none;
+  flex: 1;
+  border-right: 1px solid;	 
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+li.add-to-cart-ajax:hover {
+ 	color: white;
+  	background: black;
+}
+li.add-to-cart-ajax:last-child {
+  border-right: none; 
+}
+li.add-to-cart-ajax.disabled-add {
+  background-image: linear-gradient(to bottom left, transparent 50%, #000000 50%, #000000 52%, transparent 50%),linear-gradient(to bottom right, transparent 50%, #000000 50%, #000000 52%, transparent 50%);
+  cursor: not-allowed;
+  position: relative;
+}
+li.add-to-cart-ajax.disabled-add:hover {
+  background-image: linear-gradient(to bottom left, transparent 50%, #FFFFFF 50%, #FFFFFF 52%, transparent 50%),linear-gradient(to bottom right, transparent 50%, #FFFFFF 50%, #FFFFFF 52%, transparent 50%);
+}
+li.add-to-cart-ajax.disabled-add:hover::after {
+  content: 'Agotado';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  background: white;
+  color: black;
+  padding: 10px;
+  width: auto;
+  white-space: nowrap;
+}
+.quick-add-title {
+  width: 100%;
+  height: 50px;
+  display: inline-flex;
+  background: white;
+  align-items: center;
+  justify-content: center;
+}
+.acustom-ajax-wrapper:hover .quick-add-title {
+  display: none; 
+}
+
+
+
+.BorderIconFilter {
+  border: 1px solid #000000;
+  min-width: 40px;
+  line-height: 30px;
+  margin-left: 0;
+  text-align: center;
+  padding: 0px 10px;
+}
+
+.BorderIconFilter:hover {
+  background-color: #000000;
+  color: #FFFFFF !important;
+}
+
+.BorderIconFilter.is-active {
+  background-color: #000000;
+  color: #FFFFFF !important;
+}

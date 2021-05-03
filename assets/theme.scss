@@ -111,8 +111,8 @@ $product-show-price-on-hover    : false;
 $product-list-horizontal-spacing: extra_small;
 $product-list-vertical-spacing  : small;
 
-$cursor-zoom-in-svg    : "//cdn.shopify.com/s/files/1/1182/6070/t/13/assets/cursor-zoom-in.svg?v=17053293033005814018";
-$cursor-zoom-in-2x-svg : "//cdn.shopify.com/s/files/1/1182/6070/t/13/assets/cursor-zoom-in-2x.svg?v=5668565818364938756";
+$cursor-zoom-in-svg    : "//cdn.shopify.com/s/files/1/1182/6070/t/25/assets/cursor-zoom-in.svg?v=17053293033005814018";
+$cursor-zoom-in-2x-svg : "//cdn.shopify.com/s/files/1/1182/6070/t/25/assets/cursor-zoom-in-2x.svg?v=5668565818364938756";
 
 /* Animation */
 
@@ -4609,10 +4609,11 @@ select::-ms-expand {
   &::after {
     content: '';
     position: absolute;
-    width: calc(100% + 6px);
-    height: calc(100% + 6px);
-    top: -3px;
-    left: -3px;
+    width: 35.5px;
+    height: 35.5px;
+    top: -2.55px;
+    left: -2.7px;
+    border-radius: 50px;
   }
 
   &:hover::after {
@@ -4638,8 +4639,7 @@ select::-ms-expand {
 }
 
 .ColorSwatch--white {
-  outline: 1px solid $border-color;
-  outline-offset: -1px;
+  box-shadow: 0 0 0 1px #E8E8E8;
 }
 
 .ColorSwatch.is-active::after,

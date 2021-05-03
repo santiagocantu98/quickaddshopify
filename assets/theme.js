@@ -1655,7 +1655,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
         // Then we add the product in Ajax
         var formElement = this.element.querySelector('form[action*="/cart/add"]');
-
+		
+        console.log(JSON.stringify(__WEBPACK_IMPORTED_MODULE_2__helper_Form__["default"].serialize(formElement)));
+        
         fetch(window.routes.cartAddUrl + '.js', {
           body: JSON.stringify(__WEBPACK_IMPORTED_MODULE_2__helper_Form__["default"].serialize(formElement)),
           credentials: 'same-origin',
