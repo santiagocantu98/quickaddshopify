@@ -48,11 +48,18 @@
 
             <div class="ProductListWrapper">
               <div id="infinite-scroll" class="ProductList ProductList--grid {% if paginate.pages > 1 %}ProductList--removeMargin{% endif %} Grid" data-mobile-count="{{ mobile_items_per_row }}" data-desktop-count="{{ desktop_items_per_row }}">
-                {%- for product_handle in ajax-collection -%}
-          			{% assign product = all_products[product_handle] %}
-                  <div class="Grid__Cell 1/{{ mobile_items_per_row }}--phone 1/{{ tablet_items_per_row }}--tablet-and-up 1/{{ desktop_items_per_row }}--{% if section.settings.filter_position == 'drawer' %}lap-and-up{% else %}desk{% endif %}">
-                    {%- render 'product-item-dmx', product: product, show_product_info: true, show_vendor: section.settings.show_vendor, show_color_swatch: section.settings.show_color_swatch, show_labels: true -%}
-                  </div>
+                {%- for product_handle in ajax-collection -%}          
+                
+                {% for product in collection.all_products %}
+                    {% if product.handle contains product_handle %}
+                        <div class="Grid__Cell 1/{{ mobile_items_per_row }}--phone 1/{{ tablet_items_per_row }}--tablet-and-up 1/{{ desktop_items_per_row }}--{% if section.settings.filter_position == 'drawer' %}lap-and-up{% else %}desk{% endif %}">
+                          {%- render 'product-item-dmx', product: product, show_product_info: true, show_vendor: section.settings.show_vendor, show_color_swatch: section.settings.show_color_swatch, show_labels: true -%}
+                        </div>
+            			{% break %}
+                    {% endif %}
+                {% endfor %}
+
+                  
                 {%- endfor -%}
               </div>
               <div id="pagination">
